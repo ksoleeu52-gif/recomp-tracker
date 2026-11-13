@@ -414,18 +414,20 @@ h1, h2, h3, p { margin: 0; }
 .meal__totals { font-size: 14px; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .meal__entries { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
 .meal__entries > li + li { border-top: 1px solid var(--border); }
-.meal__add {
+.meal__footer { display: flex; align-items: stretch; border-top: 1px solid var(--border); }
+.meal__add, .meal__save {
   display: flex;
   align-items: center;
   gap: 8px;
   min-height: 54px;
   padding: 0 16px;
-  border-top: 1px solid var(--border);
   color: var(--accent);
   font-weight: 650;
   text-decoration: none;
 }
-.meal__add:active { background: var(--surface-2); }
+.meal__add { flex: 1; }
+.meal__save { color: var(--text-muted); font-size: 14px; font-weight: 600; }
+.meal__add:active, .meal__save:active { background: var(--surface-2); }
 
 /* A .row that is a <button> (tap to edit) */
 .row--button { width: 100%; background: none; border: 0; text-align: left; }
@@ -463,6 +465,73 @@ h1, h2, h3, p { margin: 0; }
 .pick__add:active { transform: scale(0.92); }
 .pick.is-added .pick__add { background: var(--protein); color: #0e1014; }
 .pick__add .icon { width: 24px; height: 24px; stroke-width: 2.4; }
+
+/* Section headings between lists (Add screen, Meals tab) */
+.list-heading {
+  margin: 20px 4px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.list-heading:first-child { margin-top: 4px; }
+.more summary { cursor: pointer; list-style: none; display: flex; align-items: center; min-height: var(--tap); margin-bottom: 0; }
+.more summary::-webkit-details-marker { display: none; }
+.more summary::after { content: '▾'; margin-left: 8px; }
+.more[open] summary::after { content: '▴'; }
+
+/* Saved meals in the picker get a soft accent so they stand out from single foods. */
+.pick--meal .row__title::before { content: '★ '; color: var(--carbs); }
+
+.tag {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.text-danger { color: var(--danger); }
+
+/* ---------- Meal editor items ---------- */
+.fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+.fieldset legend { margin-bottom: 6px; padding: 0; }
+.items { list-style: none; margin: 0 -18px 12px; padding: 0; border-top: 1px solid var(--border); }
+.item { padding: 12px 18px; border-bottom: 1px solid var(--border); }
+.items__empty { padding: 16px 18px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+.item__head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.item__head .row__title { flex: 1; min-width: 0; }
+.item__remove { width: 40px; height: 40px; margin: -8px -10px -8px 0; color: var(--text-muted); }
+.item__remove .icon { width: 20px; height: 20px; }
+.item__controls {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.3fr) minmax(0, 0.9fr);
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+.input-wrap--compact { min-height: 46px; padding: 0 10px; }
+.input-wrap--compact input, .input-wrap--compact select { height: 44px; font-size: 16px; }
+.item__macros { font-size: 13px; line-height: 1.3; text-align: right; font-variant-numeric: tabular-nums; }
+.meal-total { margin: 4px 4px 14px; line-height: 1.6; color: var(--text-muted); }
+.meal-total b { color: var(--text); }
+.meal-total .text-protein { color: var(--protein); }
+
+/* Meal preview sheet */
+.preview-items { list-style: none; margin: 0 0 8px; padding: 0; }
+.preview-items li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Search inside a sheet: stick to the top of the sheet, not the page. */
+.search--sheet { top: 0; box-shadow: 0 -12px 0 var(--surface); }
 
 /* Leave room for the action bar on screens that have one. */
 .view:has(.action-bar) { padding-bottom: 80px; }
@@ -508,7 +577,8 @@ body:has(.action-bar) #toast-root { bottom: calc(var(--tabbar-h) + var(--safe-bo
 .sheet__handle { width: 40px; height: 5px; margin: 0 auto 14px; border-radius: 3px; background: var(--border); }
 .sheet__title { font-size: 21px; font-weight: 750; }
 .sheet__subtitle { margin: 2px 0 16px; color: var(--text-muted); font-size: 14px; }
-.portion .calc__result { min-height: 3.2em; margin-bottom: 14px; }
+.sheet .calc__result { margin-bottom: 16px; }
+.portion .calc__result { min-height: 3.2em; }
 @keyframes sheet-up { from { transform: translateY(40px); opacity: 0.4; } }
 
 .segmented--small span { min-height: 40px; font-size: 14px; padding: 0 4px; }

@@ -11,7 +11,7 @@
  *
  * Keep VERSION in sync with APP_VERSION in js/config.js.
  */
-const VERSION = '0.4.0';
+const VERSION = '0.5.0';
 const CACHE = `recomp-${VERSION}`;
 const IS_LOCAL_DEV = ['localhost', '127.0.0.1'].includes(self.location.hostname);
 
@@ -32,6 +32,7 @@ const APP_SHELL = [
   'js/db/idb.js',
   'js/db/foods.js',
   'js/db/log.js',
+  'js/db/meals.js',
   'js/db/settings.js',
   'js/db/storage.js',
   'js/lib/html.js',
@@ -41,6 +42,7 @@ const APP_SHELL = [
   'js/lib/starter-foods.js',
   'js/lib/swipe.js',
   'js/components/fields.js',
+  'js/components/food-picker-sheet.js',
   'js/components/food-row.js',
   'js/components/header.js',
   'js/components/icons.js',
@@ -54,6 +56,7 @@ const APP_SHELL = [
   'js/screens/foods.js',
   'js/screens/food-editor.js',
   'js/screens/add.js',
+  'js/screens/meal-editor.js',
   'js/screens/meals.js',
   'js/screens/settings.js',
 ];

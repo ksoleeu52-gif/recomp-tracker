@@ -25,6 +25,7 @@ const routes = {
   food: () => import('./screens/food-editor.js'),
   add: () => import('./screens/add.js'),
   meals: () => import('./screens/meals.js'),
+  meal: () => import('./screens/meal-editor.js'),
   settings: () => import('./screens/settings.js'),
 };
 

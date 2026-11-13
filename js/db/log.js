@@ -30,15 +30,13 @@ export function snapshotOf(food) {
 }
 
 /**
- * Logs an amount of a food and remembers that amount as the food's new default
- * (so next time it's one tap). Both writes happen in one transaction.
- * @returns the new entry
+ * Builds (but doesn't save) a log entry for an amount of a food.
+ * Throws if the meal is unknown or the unit can't be calculated for this food.
  */
-export async function logFood(food, { date, meal, amount, unit, savedMealId = null, rememberPortion = true }) {
+export function buildEntry(food, { date, meal, amount, unit, savedMealId = null, now = Date.now() }) {
   if (!MEAL_IDS.includes(meal)) throw new Error(`Unknown meal: ${meal}`);
-  const macros = macrosFor(food, amount, unit); // throws if the unit is impossible
-  const now = Date.now();
-  const entry = {
+  const macros = macrosFor(food, amount, unit);
+  return {
     id: newId(),
     date,
     meal,
@@ -53,6 +51,16 @@ export async function logFood(food, { date, meal, amount, unit, savedMealId = nu
     createdAt: now,
     updatedAt: now,
   };
+}
+
+/**
+ * Logs an amount of a food and remembers that amount as the food's new default
+ * (so next time it's one tap). Both writes happen in one transaction.
+ * @returns the new entry
+ */
+export async function logFood(food, { date, meal, amount, unit, rememberPortion = true }) {
+  const now = Date.now();
+  const entry = buildEntry(food, { date, meal, amount, unit, now });
 
   await transaction([STORES.log, STORES.foods], 'readwrite', async (s) => {
     s[STORES.log].put(entry);
@@ -91,6 +99,11 @@ export async function deleteEntry(id) {
 }
 
 export const restoreEntry = (entry) => put(STORES.log, entry);
+
+/** Deletes several entries at once (used to undo logging a whole saved meal). */
+export function deleteEntries(ids) {
+  return transaction(STORES.log, 'readwrite', (s) => Promise.all(ids.map((id) => promisify(s[STORES.log].delete(id)))));
+}
 
 /** { breakfast: [...], lunch: [...], dinner: [...], snacks: [...] } */
 export function groupByMeal(entries) {
