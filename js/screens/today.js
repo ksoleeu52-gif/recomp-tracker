@@ -8,7 +8,9 @@
  */
 import { html, render } from '../lib/html.js';
 import { getSettings } from '../db/settings.js';
-import { getDayLog, groupByMeal, updateEntry, deleteEntry, restoreEntry } from '../db/log.js';
+import {
+  getDayLog, groupByMeal, updateEntry, updateQuickEntry, deleteEntry, deleteEntries, restoreEntry, copyEntries,
+} from '../db/log.js';
 import { todayKey, dayHeading, isDayKey, addDays, msUntilMidnight } from '../lib/dates.js';
 import { sumMacros } from '../lib/nutrition.js';
 import { onSwipe } from '../lib/swipe.js';
@@ -16,6 +18,7 @@ import { MEALS } from '../config.js';
 import { summaryCard } from '../components/summary-card.js';
 import { mealSection } from '../components/meal-section.js';
 import { openPortionSheet } from '../components/portion-sheet.js';
+import { openQuickAddSheet } from '../components/quick-add-sheet.js';
 import { icons } from '../components/icons.js';
 import { toast } from '../components/toast.js';
 
@@ -28,8 +31,11 @@ export default {
     const date = isDayKey(query.date) && query.date < today ? query.date : today;
     const isToday = date === today;
     const heading = dayHeading(date, today);
-    const [settings, entries] = await Promise.all([getSettings(), getDayLog(date)]);
+    const previousDay = addDays(date, -1);
+    const [settings, entries, previousEntries] = await Promise.all([getSettings(), getDayLog(date), getDayLog(previousDay)]);
     const byMeal = groupByMeal(entries);
+    const previousByMeal = groupByMeal(previousEntries);
+    const previousLabel = isToday ? 'yesterday' : 'previous day';
 
     /** Switches day without filling the back-button history with every day visited. */
     const goToDay = (day) => {
@@ -50,7 +56,13 @@ export default {
       </header>
 
       ${summaryCard({ targets: settings, totals: sumMacros(entries), isToday })}
-      ${MEALS.map((meal) => mealSection({ meal, entries: byMeal[meal.id], date }))}
+      ${MEALS.map((meal) => mealSection({
+        meal,
+        entries: byMeal[meal.id],
+        date,
+        previousCount: previousByMeal[meal.id].length,
+        previousLabel,
+      }))}
     `);
 
     root.addEventListener('click', (event) => {
@@ -61,11 +73,29 @@ export default {
       // Tap the date to jump to any past day.
       if (event.target.closest('[data-action="pick-date"]')) return openDatePicker(root);
 
+      // "Copy yesterday (3)": duplicate the previous day's items for this meal.
+      const copyButton = event.target.closest('[data-copy]');
+      if (copyButton) return copyPreviousMeal(copyButton.dataset.copy);
+
       // Tap a logged item to change its amount, move it to another meal, or delete it.
       const entryButton = event.target.closest('[data-entry]');
       const entry = entryButton && entries.find((e) => e.id === entryButton.dataset.entry);
       if (entry) editEntry(entry, refresh);
     });
+
+    const copyPreviousMeal = async (mealId) => {
+      const copies = await copyEntries(previousByMeal[mealId], { date, meal: mealId });
+      const label = MEALS.find((m) => m.id === mealId).label.toLowerCase();
+      refresh();
+      toast(`Copied ${previousLabel}'s ${label} (${copies.length} items)`, {
+        actionLabel: 'Undo',
+        duration: 5000,
+        onAction: async () => {
+          await deleteEntries(copies.map((c) => c.id));
+          refresh();
+        },
+      });
+    };
 
     root.querySelector('[data-date-input]').addEventListener('change', (event) => {
       if (isDayKey(event.target.value)) goToDay(event.target.value);
@@ -109,8 +139,37 @@ function openDatePicker(root) {
   }
 }
 
+/** Delete with Undo, shared by both kinds of entry. */
+async function removeEntry(entry, refresh) {
+  await deleteEntry(entry.id);
+  refresh();
+  toast(`Removed ${entry.name}`, {
+    actionLabel: 'Undo',
+    duration: 5000,
+    onAction: async () => {
+      await restoreEntry(entry);
+      refresh();
+    },
+  });
+}
+
 function editEntry(entry, refresh) {
-  if (!entry.foodSnapshot) return; // quick-add entries get their own editor in step 6
+  // Quick-add entries have no food to scale, so edit their numbers directly.
+  if (!entry.foodSnapshot) {
+    openQuickAddSheet({
+      title: 'Edit quick add',
+      values: entry,
+      meal: entry.meal,
+      confirmLabel: 'Save',
+      onConfirm: async (fields) => {
+        await updateQuickEntry(entry, fields);
+        toast(`Updated ${fields.name}`);
+        refresh();
+      },
+      onDelete: () => removeEntry(entry, refresh),
+    });
+    return;
+  }
 
   openPortionSheet({
     title: entry.name,
@@ -125,17 +184,6 @@ function editEntry(entry, refresh) {
       toast(`Updated ${entry.name}`);
       refresh();
     },
-    onDelete: async () => {
-      await deleteEntry(entry.id);
-      refresh();
-      toast(`Removed ${entry.name}`, {
-        actionLabel: 'Undo',
-        duration: 5000,
-        onAction: async () => {
-          await restoreEntry(entry);
-          refresh();
-        },
-      });
-    },
+    onDelete: () => removeEntry(entry, refresh),
   });
 }

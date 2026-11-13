@@ -9,11 +9,18 @@ import { portionLabel } from './food-row.js';
 import { icons } from './icons.js';
 
 /**
- * @param {{ meal: {id:string,label:string}, entries: object[], date: string }} o
+ * @param {object} o
+ * @param {{id:string,label:string}} o.meal
+ * @param {object[]} o.entries   this meal's entries for the day
+ * @param {string} o.date
+ * @param {number} [o.previousCount]  items in the same meal on the previous day (offers "Copy")
+ * @param {string} [o.previousLabel]  "yesterday" / "previous day"
  */
-export function mealSection({ meal, entries, date }) {
+export function mealSection({ meal, entries, date, previousCount = 0, previousLabel = 'yesterday' }) {
   const subtotal = sumMacros(entries);
   const canSave = entries.some((entry) => entry.foodId);
+  // Only offered on an empty meal, so one tap can't accidentally double it up.
+  const canCopy = entries.length === 0 && previousCount > 0;
 
   return html`
     <section class="card meal" aria-labelledby="meal-${meal.id}">
@@ -26,6 +33,10 @@ export function mealSection({ meal, entries, date }) {
       <div class="meal__footer">
         <a class="meal__add" href="#/add?meal=${meal.id}&date=${date}">${icons.plus} Add to ${meal.label}</a>
         ${canSave && html`<a class="meal__save" href="#/meal/new?fromDate=${date}&fromMeal=${meal.id}">Save as meal</a>`}
+        ${canCopy && html`
+          <button class="meal__save meal__copy" type="button" data-copy="${meal.id}">
+            Copy ${previousLabel} (${previousCount})
+          </button>`}
       </div>
     </section>`;
 }

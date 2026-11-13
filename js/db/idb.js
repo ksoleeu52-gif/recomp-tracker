@@ -121,6 +121,16 @@ export const put = (store, value) =>
 export const del = (store, key) =>
   transaction(store, 'readwrite', (s) => promisify(s[store].delete(key)));
 
+/** Merges `fields` into an existing record (no-op if it doesn't exist). Returns the result. */
+export const patch = (store, key, fields) =>
+  transaction(store, 'readwrite', async (s) => {
+    const record = await promisify(s[store].get(key));
+    if (!record) return null;
+    const updated = { ...record, ...fields };
+    s[store].put(updated);
+    return updated;
+  });
+
 /** Gets all records, optionally via an index and key/range. */
 export const getAll = (store, { index, query } = {}) =>
   transaction(store, 'readonly', (s) => {

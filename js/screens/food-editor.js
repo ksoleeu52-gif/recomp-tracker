@@ -54,6 +54,11 @@ export default {
         <section class="card">
           ${field({ name: 'name', label: 'Name', value: valueOf('name'), inputmode: 'text', placeholder: 'e.g. Porridge oats' })}
           ${field({ name: 'brand', label: 'Brand (optional)', value: valueOf('brand'), inputmode: 'text' })}
+          <label class="switch">
+            <input type="checkbox" name="isFavourite" ${food.isFavourite && html`checked`}>
+            <span class="switch__track" aria-hidden="true"></span>
+            <span>★ Favourite <span class="muted small">(shown near the top when adding food)</span></span>
+          </label>
         </section>
 
         <section class="card">
@@ -153,7 +158,7 @@ export default {
       const { valid, errors, food: fields } = validateFood(readInput());
       showFieldErrors(form, errors);
       if (!valid) return;
-      const saved = await saveFood(fields, existing?.id);
+      const saved = await saveFood({ ...fields, isFavourite: form.isFavourite.checked }, existing?.id);
       toast(`Saved ${saved.name}`);
       goBack('foods');
     });

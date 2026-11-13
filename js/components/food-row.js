@@ -28,10 +28,10 @@ export function macroLine(m) {
     · ${fmtDecimal(m.carbs)}g carbs · ${fmtDecimal(m.fat)}g fat`;
 }
 
-/** One line in the Foods list. Tapping it opens the editor. */
+/** One line in the Foods list: tap to open the editor, ☆ to toggle favourite. */
 export function foodRow(food) {
   return html`
-    <li>
+    <li class="food-row" data-food-id="${food.id}">
       <a class="row" href="#/food/${encodeURIComponent(food.id)}">
         <span class="row__main">
           <span class="row__title">${food.name}</span>
@@ -39,5 +39,14 @@ export function foodRow(food) {
         </span>
         <span class="row__side"><b>${fmtInt(food.kcal)}</b><small>kcal</small></span>
       </a>
+      ${favouriteButton(food)}
     </li>`;
+}
+
+/** Star toggle. aria-pressed tells screen readers whether it's on. */
+export function favouriteButton(food) {
+  const on = Boolean(food.isFavourite);
+  return html`
+    <button class="fav-btn ${on && 'is-on'}" type="button" data-action="favourite" aria-pressed="${on}"
+      aria-label="${on ? 'Remove from favourites' : 'Add to favourites'}: ${food.name}">${on ? '★' : '☆'}</button>`;
 }

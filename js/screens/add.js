@@ -1,18 +1,20 @@
 /**
  * Add food to a meal.  Route: #/add?meal=breakfast&date=YYYY-MM-DD
  *
- * Built for speed:
- *  - Saved meals for this slot come first ("Add to Breakfast" shows breakfast meals);
- *    their + logs the whole meal in one tap.
- *  - Then your foods, most recently used first. Each row shows the portion its +
- *    will log (your last-used amount). "+ Breakfast" then "+" = 2 taps.
- *  - Tapping a name opens a sheet for a different portion (foods) or a preview (meals).
- *  - You stay on this screen, so several things can be added in a row; the bar at
- *    the bottom shows what you've added, and Done goes back.
+ * Built for speed. Sections, in order:
+ *   1. Saved meals for this slot — their + logs the whole meal in one tap
+ *   2. ★ Favourites
+ *   3. Recent — what you've logged lately
+ *   4. All other foods, A–Z
+ *   5. Saved meals for other slots (collapsed)
+ * Every food row shows the portion its + will log (your last-used amount), so
+ * "+ Breakfast" then "+" = 2 taps. Tapping a name opens a sheet for a different
+ * portion (foods) or a preview (meals). "Quick add" logs raw calories.
+ * You stay on this screen to add several things; Done goes back.
  */
 import { html, render } from '../lib/html.js';
 import { listFoods, matchFoods } from '../db/foods.js';
-import { logFood, deleteEntries, MEAL_IDS } from '../db/log.js';
+import { logFood, logQuickAdd, undoLogging, usageOf, MEAL_IDS } from '../db/log.js';
 import { listMeals, logSavedMeal, resolveItems, mealTotals } from '../db/meals.js';
 import { todayKey, dayLabel, isDayKey } from '../lib/dates.js';
 import { fmtInt, fmtDecimal } from '../lib/format.js';
@@ -21,9 +23,12 @@ import { MEALS } from '../config.js';
 import { backHeader } from '../components/header.js';
 import { portionLabel, macroLine } from '../components/food-row.js';
 import { openPortionSheet } from '../components/portion-sheet.js';
+import { openQuickAddSheet } from '../components/quick-add-sheet.js';
 import { openSheet } from '../components/sheet.js';
 import { icons } from '../components/icons.js';
 import { toast } from '../components/toast.js';
+
+const RECENT_LIMIT = 10;
 
 export default {
   title: 'Add food',
@@ -37,26 +42,19 @@ export default {
 
     const [allFoods, meals] = await Promise.all([listFoods({ includeArchived: true }), listMeals()]);
     const foodsById = new Map(allFoods.map((food) => [food.id, food]));
-    // Most recently used first; never-used foods keep their A–Z order (sort is stable).
-    const foods = allFoods.filter((f) => !f.archived).sort((a, b) => (b.lastUsedAt || 0) - (a.lastUsedAt || 0));
+    const foods = allFoods.filter((f) => !f.archived); // A–Z
     const added = []; // entries logged during this visit, for the bottom bar
 
-    const isEmpty = foods.length === 0 && meals.length === 0;
     render(root, html`
       ${backHeader(`Add to ${slotLabel}`, 'today', date === today ? '' : dayLabel(date, today))}
-      ${isEmpty
-        ? html`
-          <div class="empty">
-            <p class="empty__title">Your food library is empty</p>
-            <p>Add a food first, then you can log it here.</p>
-            <div class="empty__actions"><a class="btn btn--primary btn--block" href="#/food/new">${icons.plus} New food</a></div>
-          </div>`
-        : html`
-          <label class="search">
-            ${icons.search}
-            <input type="search" id="pick-search" placeholder="Search foods and meals" autocomplete="off" enterkeyhint="search" aria-label="Search foods and meals">
-          </label>
-          <div id="pick-lists"></div>`}
+      <div class="add-tools">
+        <label class="search">
+          ${icons.search}
+          <input type="search" id="pick-search" placeholder="Search" autocomplete="off" enterkeyhint="search" aria-label="Search foods and meals">
+        </label>
+        <button class="btn add-tools__quick" type="button" data-action="quick-add">${icons.bolt} Quick add</button>
+      </div>
+      <div id="pick-lists"></div>
       <div class="action-bar">
         <p class="action-bar__text" data-summary></p>
         <button class="btn btn--primary" type="button" data-back="today">Done</button>
@@ -73,35 +71,58 @@ export default {
     updateSummary();
 
     const lists = root.querySelector('#pick-lists');
-    if (!lists) return;
-
     let currentQuery = '';
+
     const drawLists = () => {
-      const searching = currentQuery.trim() !== '';
-      const matchingMeals = matchFoods(meals, currentQuery);
-      // While searching, show every matching meal; otherwise this slot's meals first, others tucked away.
-      const firstMeals = searching ? matchingMeals : matchingMeals.filter((m) => m.mealType === slot);
-      const otherMeals = searching ? [] : matchingMeals.filter((m) => m.mealType !== slot);
-      const matchingFoods = matchFoods(foods, currentQuery);
+      const q = currentQuery.trim();
+      if (foods.length === 0 && meals.length === 0) {
+        render(lists, html`
+          <div class="empty">
+            <p class="empty__title">Your food library is empty</p>
+            <p>Add a food to log it here, or use Quick add for a one-off.</p>
+            <div class="empty__actions"><a class="btn btn--primary btn--block" href="#/food/new">${icons.plus} New food</a></div>
+          </div>`);
+        return;
+      }
+
+      const createLink = html`
+        <li class="list__empty">
+          <a href="#/food/new${q && `?name=${encodeURIComponent(q)}`}">+ Create a new food</a>
+        </li>`;
+
+      if (q) {
+        // Searching: one list of meals, one of foods (best matches first).
+        const matchingMeals = matchFoods(meals, q);
+        const matchingFoods = matchFoods(foods, q);
+        render(lists, html`
+          ${section('Saved meals', matchingMeals.map((m) => mealRow(m, foodsById)))}
+          ${section('Foods', html`
+            ${matchingFoods.map(foodRow)}
+            ${matchingFoods.length === 0 && html`<li class="list__empty">No foods match “${q}”.</li>`}
+            ${createLink}`)}
+        `);
+        return;
+      }
+
+      const favourites = foods.filter((f) => f.isFavourite);
+      const recent = foods
+        .filter((f) => !f.isFavourite && f.lastUsedAt > 0)
+        .sort((a, b) => b.lastUsedAt - a.lastUsedAt)
+        .slice(0, RECENT_LIMIT);
+      const shown = new Set([...favourites, ...recent]);
+      const others = foods.filter((f) => !shown.has(f));
+      const slotMeals = meals.filter((m) => m.mealType === slot);
+      const otherMeals = meals.filter((m) => m.mealType !== slot);
 
       render(lists, html`
-        ${firstMeals.length > 0 && html`
-          <h2 class="list-heading">${searching ? 'Saved meals' : `Your ${slotLabel.toLowerCase()} meals`}</h2>
-          <ul class="list pick-list">${firstMeals.map((meal) => mealRow(meal, foodsById))}</ul>`}
-
-        <h2 class="list-heading">${searching ? 'Foods' : 'Foods · recent first'}</h2>
-        <ul class="list pick-list">
-          ${matchingFoods.map((food) => foodRow(food))}
-          <li class="list__empty">
-            ${matchingFoods.length === 0 && html`No foods match “${currentQuery}”. `}
-            <a href="#/food/new${currentQuery && `?name=${encodeURIComponent(currentQuery)}`}">+ Create a new food</a>
-          </li>
-        </ul>
-
+        ${section(`Your ${slotLabel.toLowerCase()} meals`, slotMeals.map((m) => mealRow(m, foodsById)))}
+        ${section('★ Favourites', favourites.map(foodRow))}
+        ${section('Recent', recent.map(foodRow))}
+        ${section(shown.size ? 'All other foods' : 'Your foods', html`${others.map(foodRow)}${createLink}`, { always: true })}
         ${otherMeals.length > 0 && html`
           <details class="more">
             <summary class="list-heading">Other saved meals (${otherMeals.length})</summary>
-            <ul class="list pick-list">${otherMeals.map((meal) => mealRow(meal, foodsById))}</ul>
+            <ul class="list pick-list">${otherMeals.map((m) => mealRow(m, foodsById))}</ul>
           </details>`}
       `);
     };
@@ -111,46 +132,77 @@ export default {
       drawLists();
     });
 
-    /** Shared "added" feedback: bottom bar, a tick on the row, and an Undo toast. */
-    const confirmAdded = (entries, row, message) => {
+    /**
+     * Shared "added" feedback: bottom bar, a tick on the row, and an Undo toast.
+     * `previous` is the usage captured before logging, so Undo also restores
+     * Recent order and remembered portions.
+     */
+    const confirmAdded = (entries, rows, message, previous = {}) => {
       added.push(...entries);
       updateSummary();
-      flash(row);
+      rows.forEach(flash);
       toast(message, {
         actionLabel: 'Undo',
         duration: 4000,
         onAction: async () => {
-          await deleteEntries(entries.map((e) => e.id));
+          await undoLogging(entries, previous);
+          for (const { id, usage } of previous.foods ?? []) Object.assign(foodsById.get(id), usage);
+          for (const { id, usage } of previous.meals ?? []) Object.assign(meals.find((m) => m.id === id) ?? {}, usage);
           for (const entry of entries) added.splice(added.indexOf(entry), 1);
           // The toast can outlive this screen (e.g. Undo tapped after Done): refresh whatever is showing.
-          if (root.isConnected) updateSummary();
-          else refresh();
+          if (root.isConnected) {
+            updateSummary();
+            drawLists();
+          } else {
+            refresh();
+          }
         },
       });
     };
 
+    const rowsFor = (attr, id) => [...lists.querySelectorAll(`[${attr}="${CSS.escape(id)}"]`)];
+
     const logOneFood = async (food, amount, unit) => {
+      const previous = { foods: [{ id: food.id, usage: usageOf(food) }] };
       const entry = await logFood(food, { date, meal: slot, amount, unit });
-      Object.assign(food, { lastUsedAt: entry.createdAt, defaultAmount: amount, defaultUnit: unit });
-      // Re-draw the row: its default portion may have changed.
-      const row = lists.querySelector(`[data-food-id="${CSS.escape(food.id)}"]`);
-      if (row) row.outerHTML = String(foodRow(food));
-      confirmAdded([entry], lists.querySelector(`[data-food-id="${CSS.escape(food.id)}"]`), `Added ${food.name} (${portionLabel(food, amount, unit)})`);
+      Object.assign(food, { lastUsedAt: entry.createdAt, useCount: (food.useCount || 0) + 1, defaultAmount: amount, defaultUnit: unit });
+      // Re-draw the food's rows in place (its default portion may have changed) without reordering.
+      for (const row of rowsFor('data-food-id', food.id)) row.outerHTML = String(foodRow(food));
+      confirmAdded([entry], rowsFor('data-food-id', food.id), `Added ${food.name} (${portionLabel(food, amount, unit)})`, previous);
     };
 
     const logMeal = async (meal) => {
+      const mealFoods = resolveItems(meal, foodsById).filter((r) => r.food).map((r) => r.food);
+      const previous = {
+        foods: [...new Set(mealFoods)].map((f) => ({ id: f.id, usage: usageOf(f) })),
+        meals: [{ id: meal.id, usage: usageOf(meal) }],
+      };
       const entries = await logSavedMeal(meal, foodsById, { date, slot });
-      const row = lists.querySelector(`[data-meal-id="${CSS.escape(meal.id)}"]`);
-      confirmAdded(entries, row, `Added ${meal.name} (${entries.length} items)`);
+      const now = entries[0]?.createdAt ?? Date.now();
+      for (const f of mealFoods) f.lastUsedAt = now;
+      meal.lastUsedAt = now;
+      confirmAdded(entries, rowsFor('data-meal-id', meal.id), `Added ${meal.name} (${entries.length} items)`, previous);
     };
+
+    const quickAdd = () =>
+      openQuickAddSheet({
+        title: `Quick add to ${slotLabel}`,
+        confirmLabel: `Add to ${slotLabel}`,
+        onConfirm: async (fields) => {
+          const entry = await logQuickAdd({ date, meal: slot, ...fields });
+          confirmAdded([entry], [], `Added ${entry.name} (${fmtInt(entry.kcal)} kcal)`);
+        },
+      });
+
+    root.querySelector('[data-action="quick-add"]').addEventListener('click', quickAdd);
 
     lists.addEventListener('click', (event) => {
       const button = event.target.closest('[data-action]');
       if (!button) return;
       const row = button.closest('li');
 
-      if (row.dataset.foodId) {
-        const food = foods.find((f) => f.id === row.dataset.foodId);
+      if (row?.dataset.foodId) {
+        const food = foodsById.get(row.dataset.foodId);
         const portion = defaultPortion(food);
         if (button.dataset.action === 'quick') return logOneFood(food, portion.amount, portion.unit);
         return openPortionSheet({
@@ -162,7 +214,7 @@ export default {
         });
       }
 
-      if (row.dataset.mealId) {
+      if (row?.dataset.mealId) {
         const meal = meals.find((m) => m.id === row.dataset.mealId);
         if (button.dataset.action === 'quick') return logMeal(meal);
         return previewMeal(meal, foodsById, slotLabel, () => logMeal(meal));
@@ -170,6 +222,15 @@ export default {
     });
   },
 };
+
+/** A titled list; empty sections are hidden unless `always`. */
+function section(title, rows, { always = false } = {}) {
+  const isEmpty = Array.isArray(rows) && rows.length === 0;
+  if (isEmpty && !always) return '';
+  return html`
+    <h2 class="list-heading">${title}</h2>
+    <ul class="list pick-list">${rows}</ul>`;
+}
 
 /** A food in the picker: name + the portion that "+" will log. */
 function foodRow(food) {
@@ -179,7 +240,7 @@ function foodRow(food) {
   return html`
     <li class="pick" data-food-id="${food.id}">
       <button class="pick__main" type="button" data-action="choose">
-        <span class="row__title">${food.name}</span>
+        <span class="row__title">${food.isFavourite && html`<span class="star" aria-label="Favourite">★</span> `}${food.name}</span>
         <span class="row__meta">${portion} · ${fmtInt(m.kcal)} kcal · <b class="text-protein">${fmtDecimal(m.protein)}g P</b></span>
       </button>
       <button class="pick__add" type="button" data-action="quick" aria-label="Add ${portion} of ${food.name}">${icons.plus}</button>

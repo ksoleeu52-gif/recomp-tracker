@@ -11,7 +11,7 @@
  *
  * Keep VERSION in sync with APP_VERSION in js/config.js.
  */
-const VERSION = '0.5.0';
+const VERSION = '0.6.0';
 const CACHE = `recomp-${VERSION}`;
 const IS_LOCAL_DEV = ['localhost', '127.0.0.1'].includes(self.location.hostname);
 
@@ -48,6 +48,7 @@ const APP_SHELL = [
   'js/components/icons.js',
   'js/components/meal-section.js',
   'js/components/portion-sheet.js',
+  'js/components/quick-add-sheet.js',
   'js/components/ring.js',
   'js/components/sheet.js',
   'js/components/summary-card.js',

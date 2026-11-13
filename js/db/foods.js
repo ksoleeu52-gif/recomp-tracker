@@ -16,7 +16,7 @@
  * Deleting a food only archives it: past log entries keep their own copy of the
  * numbers, and saved meals can still show what they referred to.
  */
-import { get, getAll, put, transaction, promisify, newId, STORES } from './idb.js';
+import { get, getAll, put, patch, transaction, promisify, newId, STORES } from './idb.js';
 import { parseNumber } from '../lib/format.js';
 import { unitsFor } from '../lib/nutrition.js';
 
@@ -149,6 +149,9 @@ export async function saveFood(fields, id = null) {
   await put(STORES.foods, food);
   return food;
 }
+
+/** Stars / un-stars a food. Favourites get their own section when adding food. */
+export const setFavourite = (id, isFavourite) => patch(STORES.foods, id, { isFavourite, updatedAt: Date.now() });
 
 /** Soft delete. Returns the food so the caller can offer "Undo". */
 export async function archiveFood(id) {

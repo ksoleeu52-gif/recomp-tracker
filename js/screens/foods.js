@@ -2,9 +2,9 @@
  * My Foods: searchable list of every saved food, plus the entry point to add new ones.
  */
 import { html, render } from '../lib/html.js';
-import { listFoods, matchFoods, addFoods } from '../db/foods.js';
+import { listFoods, matchFoods, addFoods, setFavourite } from '../db/foods.js';
 import { STARTER_FOODS } from '../lib/starter-foods.js';
-import { foodRow } from '../components/food-row.js';
+import { foodRow, favouriteButton } from '../components/food-row.js';
 import { icons } from '../components/icons.js';
 import { toast } from '../components/toast.js';
 
@@ -54,6 +54,17 @@ export default {
     };
     drawList();
     root.querySelector('#food-search').addEventListener('input', (event) => drawList(event.target.value));
+
+    // ☆ toggles a favourite in place.
+    list.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-action="favourite"]');
+      if (!button) return;
+      const food = foods.find((f) => f.id === button.closest('[data-food-id]').dataset.foodId);
+      food.isFavourite = !food.isFavourite;
+      await setFavourite(food.id, food.isFavourite);
+      button.outerHTML = String(favouriteButton(food));
+      toast(food.isFavourite ? `★ ${food.name} added to favourites` : `${food.name} removed from favourites`);
+    });
   },
 };
 
