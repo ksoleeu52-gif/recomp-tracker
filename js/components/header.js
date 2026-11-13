@@ -6,10 +6,13 @@
 import { html } from '../lib/html.js';
 import { icons } from './icons.js';
 
-export function backHeader(title, fallbackRoute) {
+export function backHeader(title, fallbackRoute, subtitle = '') {
   return html`
     <header class="view-header view-header--sub">
       <button class="icon-btn" type="button" aria-label="Back" data-back="${fallbackRoute}">${icons.back}</button>
-      <h1 class="view-title view-title--sub">${title}</h1>
+      <div>
+        <h1 class="view-title view-title--sub">${title}</h1>
+        ${subtitle && html`<p class="view-subtitle">${subtitle}</p>`}
+      </div>
     </header>`;
 }

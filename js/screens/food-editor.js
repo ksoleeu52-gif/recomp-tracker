@@ -8,9 +8,9 @@
 import { html, render } from '../lib/html.js';
 import { getFood, saveFood, archiveFood, restoreFood, validateFood } from '../db/foods.js';
 import { macrosFor, unitsFor, defaultPortion, kcalFromMacros } from '../lib/nutrition.js';
-import { parseNumber, fmtInt, fmtDecimal } from '../lib/format.js';
+import { parseNumber, fmtInt } from '../lib/format.js';
 import { field, showFieldErrors } from '../components/fields.js';
-import { portionLabel, unitLabel } from '../components/food-row.js';
+import { portionLabel, unitLabel, macroLine } from '../components/food-row.js';
 import { backHeader } from '../components/header.js';
 import { toast } from '../components/toast.js';
 import { goBack, navigate } from '../router.js';
@@ -129,11 +129,9 @@ export default {
       if (form.kcal.value.trim() === '' || !Number.isFinite(draft.kcal) || !(amount >= 0)) {
         preview.textContent = 'Enter the calories and an amount to see the maths.';
       } else {
-        const m = macrosFor(draft, amount, select.value);
         render(preview, html`
           <span class="calc__portion">${portionLabel(draft, amount, select.value)} =</span>
-          <b>${fmtInt(m.kcal)} kcal</b> · <b class="text-protein">${fmtDecimal(m.protein)}g protein</b>
-          · ${fmtDecimal(m.carbs)}g carbs · ${fmtDecimal(m.fat)}g fat`);
+          ${macroLine(macrosFor(draft, amount, select.value))}`);
       }
 
       // Gentle sanity check: macros should roughly account for the calories.

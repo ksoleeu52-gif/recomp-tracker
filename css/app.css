@@ -363,6 +363,118 @@ h1, h2, h3, p { margin: 0; }
 .dot--fat { background: var(--fat); }
 .dot--protein { background: var(--protein); }
 
+/* ---------- Meal cards (Today) ---------- */
+.meal { padding: 0; overflow: hidden; }
+.meal__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 10px;
+}
+.meal__title { font-size: 18px; font-weight: 750; }
+.meal__totals { font-size: 14px; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.meal__entries { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
+.meal__entries > li + li { border-top: 1px solid var(--border); }
+.meal__add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 54px;
+  padding: 0 16px;
+  border-top: 1px solid var(--border);
+  color: var(--accent);
+  font-weight: 650;
+  text-decoration: none;
+}
+.meal__add:active { background: var(--surface-2); }
+
+/* A .row that is a <button> (tap to edit) */
+.row--button { width: 100%; background: none; border: 0; text-align: left; }
+.row__side small.text-protein { color: var(--protein); }
+
+/* ---------- Food picker (Add screen) ---------- */
+.pick { display: flex; align-items: center; transition: background-color 0.3s ease; }
+.pick.is-added { background: rgba(52, 211, 153, 0.12); }
+.pick__main {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  min-height: 64px;
+  padding: 10px 8px 10px 16px;
+  background: none;
+  border: 0;
+  text-align: left;
+}
+.pick__main:active { background: var(--surface-2); }
+.pick__add {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  margin-right: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  transition: transform 0.08s ease, background-color 0.2s ease;
+}
+.pick__add:active { transform: scale(0.92); }
+.pick.is-added .pick__add { background: var(--protein); color: #0e1014; }
+.pick__add .icon { width: 24px; height: 24px; stroke-width: 2.4; }
+
+/* Leave room for the action bar on screens that have one. */
+.view:has(.action-bar) { padding-bottom: 80px; }
+
+/* Bar pinned above the tab bar (e.g. "2 added · Done") */
+.action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom));
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 10px var(--gutter);
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+}
+.action-bar__text { flex: 1; min-width: 0; font-size: 14px; color: var(--text-muted); }
+.action-bar__text b { color: var(--text); }
+.action-bar .btn { min-width: 96px; }
+body:has(.action-bar) #toast-root { bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 80px); }
+
+/* ---------- Bottom sheet (<dialog>) ---------- */
+.sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 90dvh;
+  margin: auto auto 0;
+  padding: 0;
+  border: 0;
+  border-radius: 22px 22px 0 0;
+  background: var(--surface);
+  color: var(--text);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.sheet[open] { animation: sheet-up 0.22s ease-out; }
+.sheet::backdrop { background: rgba(0, 0, 0, 0.55); }
+.sheet__body { padding: 10px 18px calc(18px + var(--safe-bottom)); }
+.sheet__handle { width: 40px; height: 5px; margin: 0 auto 14px; border-radius: 3px; background: var(--border); }
+.sheet__title { font-size: 21px; font-weight: 750; }
+.sheet__subtitle { margin: 2px 0 16px; color: var(--text-muted); font-size: 14px; }
+.portion .calc__result { min-height: 3.2em; margin-bottom: 14px; }
+@keyframes sheet-up { from { transform: translateY(40px); opacity: 0.4; } }
+
+.segmented--small span { min-height: 40px; font-size: 14px; padding: 0 4px; }
+
 /* ---------- Toast ---------- */
 #toast-root {
   position: fixed;

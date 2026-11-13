@@ -17,10 +17,13 @@
  * The screen renders into `root` (a fresh, detached element), which is swapped into the page
  * only when rendering is complete, so there is no flash of half-built UI.
  */
+import { closeAllSheets } from './components/sheet.js';
+
 const routes = {
   today: () => import('./screens/today.js'),
   foods: () => import('./screens/foods.js'),
   food: () => import('./screens/food-editor.js'),
+  add: () => import('./screens/add.js'),
   meals: () => import('./screens/meals.js'),
   settings: () => import('./screens/settings.js'),
 };
@@ -101,6 +104,7 @@ async function showRoute({ scrollToTop }) {
 
   cleanup?.();
   cleanup = typeof result === 'function' ? result : null;
+  if (scrollToTop) closeAllSheets(); // a real navigation dismisses any open sheet
   outlet.replaceChildren(view);
 
   document.title = `${screen.title} · Recomp`;

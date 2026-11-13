@@ -22,6 +22,12 @@ export function unitLabel(food, unit) {
   return unit === 'g' ? 'grams' : `× ${food.servingLabel || 'serving'}`;
 }
 
+/** "296 kcal · 8.8g protein · 48.8g carbs · 6g fat" with emphasis on kcal and protein. */
+export function macroLine(m) {
+  return html`<b>${fmtInt(m.kcal)} kcal</b> · <b class="text-protein">${fmtDecimal(m.protein)}g protein</b>
+    · ${fmtDecimal(m.carbs)}g carbs · ${fmtDecimal(m.fat)}g fat`;
+}
+
 /** One line in the Foods list. Tapping it opens the editor. */
 export function foodRow(food) {
   return html`

@@ -87,6 +87,17 @@ export function defaultPortion(food) {
   return { amount: 100, unit: 'g' };
 }
 
+/**
+ * Converts an amount between grams and servings so switching units keeps the
+ * same quantity (1 × 30g scoop <-> 30 g). NaN if the food has no serving weight.
+ */
+export function convertAmount(food, amount, from, to) {
+  if (from === to) return amount;
+  const servingGrams = Number(food.servingGrams);
+  if (!(servingGrams > 0)) return NaN;
+  return from === 'serving' ? round1(amount * servingGrams) : Math.round((amount / servingGrams) * 100) / 100;
+}
+
 /** Energy implied by the macros (Atwater factors 4/4/9). Used to sanity-check labels. */
 export function kcalFromMacros({ protein = 0, carbs = 0, fat = 0 }) {
   return 4 * protein + 4 * carbs + 9 * fat;
