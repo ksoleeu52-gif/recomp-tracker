@@ -1,0 +1,40 @@
+/*
+ * Design tokens. Every colour, size and radius in the app comes from here,
+ * so the whole look can be retuned (or a light theme added) in one place.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg: #0e1014;
+  --surface: #171a21;
+  --surface-2: #21252e;
+  --border: #2a2f3a;
+
+  /* Text */
+  --text: #f3f5f8;
+  --text-muted: #9aa3b2;
+  --text-faint: #6b7380;
+
+  /* Meaning */
+  --accent: #5b8cff;       /* primary actions */
+  --accent-pressed: #4a78e6;
+  --kcal: #5b8cff;
+  --protein: #34d399;
+  --carbs: #fbbf24;
+  --fat: #f472b6;
+  --warn: #fb923c;         /* over the calorie target */
+  --danger: #f87171;       /* destructive actions, errors */
+
+  /* Shape & spacing */
+  --radius: 18px;
+  --radius-sm: 12px;
+  --gutter: 16px;
+  --tap: 48px;             /* minimum tap target (WCAG / platform guidance) */
+  --tabbar-h: 64px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Type */
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+}
