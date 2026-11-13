@@ -12,6 +12,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   calorieTarget: 2400, // kcal per day
   proteinTarget: 160, // grams per day
   lastBackupAt: null, // timestamp of the last JSON export (used for the weekly reminder)
+  backupSnoozedUntil: null, // "Later" on the reminder hides it until this timestamp
+  firstRunAt: null, // when the app was first opened (reminder clock for people who never backed up)
 });
 
 /** Sensible bounds so a typo (e.g. 24000 kcal) can't be saved. */
@@ -23,6 +25,12 @@ export const TARGET_LIMITS = Object.freeze({
 export async function getSettings() {
   const stored = await get(STORES.settings, KEY);
   return { ...DEFAULT_SETTINGS, ...stored };
+}
+
+/** Records when the app was first used (only the first time). */
+export async function ensureFirstRun(now = Date.now()) {
+  const stored = await get(STORES.settings, KEY);
+  if (!stored?.firstRunAt) await updateSettings({ firstRunAt: now });
 }
 
 /** Merges `patch` into the stored settings and returns the result. */

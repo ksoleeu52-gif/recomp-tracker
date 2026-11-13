@@ -19,6 +19,8 @@ import { summaryCard } from '../components/summary-card.js';
 import { mealSection } from '../components/meal-section.js';
 import { openPortionSheet } from '../components/portion-sheet.js';
 import { openQuickAddSheet } from '../components/quick-add-sheet.js';
+import { exportBackupNow } from '../components/backup-actions.js';
+import { backupReminder, snoozeBackupReminder, hasUserData } from '../db/backup.js';
 import { icons } from '../components/icons.js';
 import { toast } from '../components/toast.js';
 
@@ -36,6 +38,8 @@ export default {
     const byMeal = groupByMeal(entries);
     const previousByMeal = groupByMeal(previousEntries);
     const previousLabel = isToday ? 'yesterday' : 'previous day';
+    // Weekly backup nudge (only on today's view, and only once there's data to lose).
+    const reminder = isToday ? backupReminder(settings, { hasData: await hasUserData() }) : { due: false };
 
     /** Switches day without filling the back-button history with every day visited. */
     const goToDay = (day) => {
@@ -55,6 +59,7 @@ export default {
         <input class="visually-hidden" type="date" data-date-input value="${date}" max="${today}" tabindex="-1" aria-hidden="true">
       </header>
 
+      ${reminder.due && backupBanner(reminder)}
       ${summaryCard({ targets: settings, totals: sumMacros(entries), isToday })}
       ${MEALS.map((meal) => mealSection({
         meal,
@@ -72,6 +77,11 @@ export default {
 
       // Tap the date to jump to any past day.
       if (event.target.closest('[data-action="pick-date"]')) return openDatePicker(root);
+
+      // Backup reminder buttons.
+      const backupAction = event.target.closest('[data-backup]')?.dataset.backup;
+      if (backupAction === 'now') return exportBackupNow().then((saved) => saved && refresh());
+      if (backupAction === 'later') return snoozeBackupReminder().then(refresh);
 
       // "Copy yesterday (3)": duplicate the previous day's items for this meal.
       const copyButton = event.target.closest('[data-copy]');
@@ -126,6 +136,20 @@ export default {
     };
   },
 };
+
+function backupBanner({ never, days }) {
+  return html`
+    <section class="reminder" aria-label="Backup reminder">
+      <p>
+        <b>${never ? 'Back up your log' : `Last backup was ${days} days ago`}</b><br>
+        Your data is stored only on this phone. Save a copy so a lost phone or cleared browser can't wipe it.
+      </p>
+      <div class="reminder__actions">
+        <button class="btn btn--primary" type="button" data-backup="now">Back up now</button>
+        <button class="btn" type="button" data-backup="later">Later</button>
+      </div>
+    </section>`;
+}
 
 /** Opens the native date picker (wheel on iOS, calendar on Android). */
 function openDatePicker(root) {

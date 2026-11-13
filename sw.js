@@ -11,7 +11,7 @@
  *
  * Keep VERSION in sync with APP_VERSION in js/config.js.
  */
-const VERSION = '0.7.0';
+const VERSION = '0.8.0';
 const CACHE = `recomp-${VERSION}`;
 const IS_LOCAL_DEV = ['localhost', '127.0.0.1'].includes(self.location.hostname);
 
@@ -30,6 +30,7 @@ const APP_SHELL = [
   'js/config.js',
   'js/router.js',
   'js/db/idb.js',
+  'js/db/backup.js',
   'js/db/foods.js',
   'js/db/log.js',
   'js/db/meals.js',
@@ -38,6 +39,7 @@ const APP_SHELL = [
   'js/lib/html.js',
   'js/lib/barcode.js',
   'js/lib/dates.js',
+  'js/lib/files.js',
   'js/lib/format.js',
   'js/lib/handoff.js',
   'js/lib/nutrition.js',
@@ -45,6 +47,7 @@ const APP_SHELL = [
   'js/lib/scanner.js',
   'js/lib/starter-foods.js',
   'js/lib/swipe.js',
+  'js/components/backup-actions.js',
   'js/components/fields.js',
   'js/components/food-picker-sheet.js',
   'js/components/food-row.js',

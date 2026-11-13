@@ -13,6 +13,7 @@ import './log.test.js';
 import './meals.test.js';
 import './fast-entry.test.js';
 import './barcode.test.js';
+import './backup.test.js';
 import './sw.test.js';
 
 runAll();

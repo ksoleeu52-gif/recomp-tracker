@@ -1,5 +1,5 @@
 /**
- * Settings: daily calorie and protein targets, plus app/storage info.
+ * Settings: daily calorie and protein targets, backup/restore, and app/storage info.
  */
 import { html, render } from '../lib/html.js';
 import { getSettings, updateSettings, validateTargets } from '../db/settings.js';
@@ -7,11 +7,13 @@ import { storageStatus } from '../db/storage.js';
 import { field, showFieldErrors } from '../components/fields.js';
 import { toast } from '../components/toast.js';
 import { APP_VERSION } from '../config.js';
+import { lastBackupLabel } from '../db/backup.js';
+import { exportBackupNow, importBackupFlow } from '../components/backup-actions.js';
 
 export default {
   title: 'Settings',
 
-  async render(root) {
+  async render(root, { refresh }) {
     const [settings, storage] = await Promise.all([getSettings(), storageStatus()]);
 
     render(root, html`
@@ -25,6 +27,18 @@ export default {
         <button class="btn btn--primary btn--block" type="submit">Save targets</button>
       </form>
 
+      <section class="card" aria-labelledby="backup-title">
+        <h2 class="card__title" id="backup-title">Backup</h2>
+        <p class="form-note">Your data is stored only on this phone. Save a backup every week and keep it somewhere safe, like Google Drive, iCloud or an email to yourself.</p>
+        <dl class="kv kv--compact">
+          <div><dt>Last backup</dt><dd data-last-backup>${lastBackupLabel(settings.lastBackupAt)}</dd></div>
+        </dl>
+        <div class="stack">
+          <button class="btn btn--primary btn--block" type="button" data-action="export">Save a backup</button>
+          <button class="btn btn--block" type="button" data-action="import">Restore from a backup…</button>
+        </div>
+      </section>
+
       <section class="card">
         <h2 class="card__title">About</h2>
         <dl class="kv">
@@ -37,6 +51,11 @@ export default {
         </dl>
       </section>
     `);
+
+    root.querySelector('[data-action="export"]').addEventListener('click', async () => {
+      if (await exportBackupNow()) root.querySelector('[data-last-backup]').textContent = lastBackupLabel(Date.now());
+    });
+    root.querySelector('[data-action="import"]').addEventListener('click', () => importBackupFlow(refresh));
 
     const form = root.querySelector('#targets-form');
     form.addEventListener('submit', async (event) => {

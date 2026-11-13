@@ -4,6 +4,7 @@
  */
 import { startRouter } from './router.js';
 import { requestPersistentStorage } from './db/storage.js';
+import { ensureFirstRun } from './db/settings.js';
 import { toast } from './components/toast.js';
 
 startRouter(document.getElementById('screen'));
@@ -11,6 +12,9 @@ registerServiceWorker();
 
 // Best effort: without this, browsers may evict IndexedDB under storage pressure.
 requestPersistentStorage().catch(() => {});
+
+// Starts the clock for the weekly backup reminder.
+ensureFirstRun().catch(() => {});
 
 /**
  * Registers sw.js and wires up the "new version available" flow:

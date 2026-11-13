@@ -655,6 +655,23 @@ h1, h2, h3, p { margin: 0; }
 .manual__row .btn { min-height: 54px; }
 .center { text-align: center; }
 
+/* Weekly backup reminder on Today */
+.reminder {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  font-size: 14px;
+}
+.reminder b { font-size: 16px; }
+.reminder__actions { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
+
+.stack { display: grid; gap: 10px; }
+.kv--compact { margin: 6px 0 14px; }
+
 /* Info banner (e.g. "Found on Open Food Facts") */
 .banner {
   display: grid;
