@@ -36,12 +36,35 @@ export function daysBetween(a, b) {
   return Math.round((fromDayKey(b) - fromDayKey(a)) / 86_400_000);
 }
 
+/** Milliseconds from `now` until the next local midnight. */
+export function msUntilMidnight(now = new Date()) {
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return midnight - now;
+}
+
 /** Short, friendly label: "Today", "Yesterday", or e.g. "Wed 11 Nov". */
 export function dayLabel(key, today = todayKey()) {
   if (key === today) return 'Today';
   if (key === addDays(today, -1)) return 'Yesterday';
   if (key === addDays(today, 1)) return 'Tomorrow';
   return fromDayKey(key).toLocaleDateString('en-IE', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+/**
+ * Title + subtitle for a day header, without repeating information:
+ *   today      -> { title: 'Today',     subtitle: 'Friday 13 November' }
+ *   yesterday  -> { title: 'Yesterday', subtitle: 'Thursday 12 November' }
+ *   other days -> { title: 'Wednesday', subtitle: '11 November' }  (+ year if not this year)
+ */
+export function dayHeading(key, today = todayKey()) {
+  const date = fromDayKey(key);
+  const relative = key === today ? 'Today' : key === addDays(today, -1) ? 'Yesterday' : null;
+  if (relative) return { title: relative, subtitle: longDate(key) };
+  const sameYear = key.slice(0, 4) === today.slice(0, 4);
+  return {
+    title: date.toLocaleDateString('en-IE', { weekday: 'long' }),
+    subtitle: date.toLocaleDateString('en-IE', { day: 'numeric', month: 'long', ...(sameYear ? {} : { year: 'numeric' }) }),
+  };
 }
 
 /** Long form, e.g. "Friday 13 November". */

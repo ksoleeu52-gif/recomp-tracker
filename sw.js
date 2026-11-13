@@ -11,7 +11,7 @@
  *
  * Keep VERSION in sync with APP_VERSION in js/config.js.
  */
-const VERSION = '0.3.0';
+const VERSION = '0.4.0';
 const CACHE = `recomp-${VERSION}`;
 const IS_LOCAL_DEV = ['localhost', '127.0.0.1'].includes(self.location.hostname);
 
@@ -39,6 +39,7 @@ const APP_SHELL = [
   'js/lib/format.js',
   'js/lib/nutrition.js',
   'js/lib/starter-foods.js',
+  'js/lib/swipe.js',
   'js/components/fields.js',
   'js/components/food-row.js',
   'js/components/header.js',

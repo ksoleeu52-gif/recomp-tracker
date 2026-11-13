@@ -6,7 +6,12 @@
 /* ---------- Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; }
+html {
+  -webkit-text-size-adjust: 100%;
+  /* Stops the browser turning horizontal swipes into back/forward navigation;
+     the Today screen uses horizontal swipes to change day. */
+  overscroll-behavior-x: none;
+}
 
 body {
   margin: 0;
@@ -15,7 +20,7 @@ body {
   font: 16px/1.4 var(--font);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
-  overscroll-behavior-y: none;
+  overscroll-behavior: none;
 }
 
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -64,7 +69,40 @@ h1, h2, h3, p { margin: 0; }
 .mt { margin-top: 10px; }
 .text-protein { color: var(--protein); font-weight: 650; }
 
-/* Sub-screen header: back button + smaller title */
+/* Hidden but still usable by scripts (e.g. the native date input behind the day picker). */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Today header: ‹ [day label] [Today] › */
+.day-nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 8px -8px 16px;
+}
+.day-nav__label {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  padding: 2px 4px;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  text-align: left;
+}
+.day-nav__label:active { background: var(--surface-2); }
+.day-nav__label .view-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.day-nav__label .view-subtitle { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.day-nav__label .icon { width: 16px; height: 16px; }
+.day-nav__today { min-height: 36px; padding: 0 14px; font-size: 14px; }
+.icon-btn:disabled { opacity: 0.25; }
 .view-header--sub { justify-content: flex-start; align-items: center; margin-left: -8px; }
 .view-title--sub { font-size: 22px; }
 
