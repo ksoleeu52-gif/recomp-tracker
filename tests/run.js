@@ -8,5 +8,7 @@ import './dates.test.js';
 import './html.test.js';
 import './nutrition.test.js';
 import './settings.test.js';
+import './foods.test.js';
+import './sw.test.js';
 
 runAll();

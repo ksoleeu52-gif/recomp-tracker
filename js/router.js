@@ -20,6 +20,7 @@
 const routes = {
   today: () => import('./screens/today.js'),
   foods: () => import('./screens/foods.js'),
+  food: () => import('./screens/food-editor.js'),
   meals: () => import('./screens/meals.js'),
   settings: () => import('./screens/settings.js'),
 };
@@ -48,15 +49,26 @@ export function navigate(path, { replace = false } = {}) {
   else location.hash = hash;
 }
 
-/** Goes back if there is in-app history, otherwise to a fallback route. */
+// history.length when the app started: anything above it was navigated to inside the app.
+let startHistoryLength = 0;
+
+/** Goes back if there is in-app history, otherwise replaces the current screen with `fallback`. */
 export function goBack(fallback = DEFAULT_ROUTE) {
-  if (history.length > 1) history.back();
+  if (history.length > startHistoryLength) history.back();
   else navigate(fallback, { replace: true });
 }
 
 export function startRouter(element) {
   outlet = element;
+  startHistoryLength = history.length;
   window.addEventListener('hashchange', () => showRoute({ scrollToTop: true }));
+
+  // Any element with data-back="<fallback route>" acts as a back button.
+  document.addEventListener('click', (event) => {
+    const back = event.target.closest('[data-back]');
+    if (back) goBack(back.dataset.back);
+  });
+
   showRoute({ scrollToTop: true });
 }
 

@@ -4,14 +4,16 @@
  * Strategy
  * - On install, precache every file the app needs (the "app shell").
  * - Same-origin requests are served cache-first, so the gym's bad signal never slows the app down.
+ *   (On localhost it's network-first instead, so edits appear on reload during development.)
  * - Cross-origin requests (e.g. the Open Food Facts API) are left alone and go to the network.
  * - Releasing a new version = bump VERSION. The new worker installs in the background and
  *   the app shows an "Update" toast; tapping it activates the new worker and reloads.
  *
  * Keep VERSION in sync with APP_VERSION in js/config.js.
  */
-const VERSION = '0.1.0';
+const VERSION = '0.2.0';
 const CACHE = `recomp-${VERSION}`;
+const IS_LOCAL_DEV = ['localhost', '127.0.0.1'].includes(self.location.hostname);
 
 // Every file the app needs to run offline. Paths are relative to this file (the app's scope).
 const APP_SHELL = [
@@ -28,18 +30,24 @@ const APP_SHELL = [
   'js/config.js',
   'js/router.js',
   'js/db/idb.js',
+  'js/db/foods.js',
   'js/db/settings.js',
   'js/db/storage.js',
   'js/lib/html.js',
   'js/lib/dates.js',
   'js/lib/format.js',
   'js/lib/nutrition.js',
+  'js/lib/starter-foods.js',
   'js/components/fields.js',
+  'js/components/food-row.js',
+  'js/components/header.js',
+  'js/components/icons.js',
   'js/components/ring.js',
   'js/components/summary-card.js',
   'js/components/toast.js',
   'js/screens/today.js',
   'js/screens/foods.js',
+  'js/screens/food-editor.js',
   'js/screens/meals.js',
   'js/screens/settings.js',
 ];
@@ -79,14 +87,30 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.includes('/tests/')) return; // never cache the test pages
 
   // App navigation always gets the cached shell; routing happens in the URL hash.
-  if (request.mode === 'navigate') {
+  if (request.mode === 'navigate' && !IS_LOCAL_DEV) {
     const indexUrl = new URL('index.html', self.registration.scope).href;
     event.respondWith(caches.match(indexUrl).then((cached) => cached || fetch(request)));
     return;
   }
 
-  event.respondWith(cacheFirst(request));
+  event.respondWith(IS_LOCAL_DEV ? networkFirst(request) : cacheFirst(request));
 });
+
+/**
+ * Network-first, falling back to the cache. Only used on localhost, so code edits
+ * show up on a normal reload while offline mode can still be tested.
+ */
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request, { cache: 'no-store' });
+    if (response.ok) (await caches.open(CACHE)).put(request, response.clone());
+    return response;
+  } catch {
+    const cached = await caches.match(request, { ignoreSearch: true });
+    if (cached) return cached;
+    throw new Error(`Offline and not cached: ${request.url}`);
+  }
+}
 
 async function cacheFirst(request) {
   const cached = await caches.match(request, { ignoreSearch: true });
