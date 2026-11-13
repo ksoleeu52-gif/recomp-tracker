@@ -72,6 +72,9 @@ function header() {
   return html`
     <header class="view-header">
       <h1 class="view-title">My Foods</h1>
-      <a class="btn btn--primary btn--pill" href="#/food/new">${icons.plus} New</a>
+      <div class="header-actions">
+        <a class="btn btn--pill" href="#/scan">${icons.barcode} Scan</a>
+        <a class="btn btn--primary btn--pill" href="#/food/new">${icons.plus} New</a>
+      </div>
     </header>`;
 }

@@ -11,7 +11,7 @@
  * Screen contract — each screen module default-exports:
  *   {
  *     title: string,
- *     tab?: string,                       // which bottom-nav tab to highlight (defaults to name)
+ *     tab?: string | (route) => string,   // which bottom-nav tab to highlight (defaults to name)
  *     render(root, ctx) => void | cleanup // may be async; may return a cleanup function
  *   }
  * The screen renders into `root` (a fresh, detached element), which is swapped into the page
@@ -24,6 +24,7 @@ const routes = {
   foods: () => import('./screens/foods.js'),
   food: () => import('./screens/food-editor.js'),
   add: () => import('./screens/add.js'),
+  scan: () => import('./screens/scan.js'),
   meals: () => import('./screens/meals.js'),
   meal: () => import('./screens/meal-editor.js'),
   settings: () => import('./screens/settings.js'),
@@ -109,7 +110,7 @@ async function showRoute({ scrollToTop }) {
   outlet.replaceChildren(view);
 
   document.title = `${screen.title} · Recomp`;
-  highlightTab(screen.tab ?? route.name);
+  highlightTab(typeof screen.tab === 'function' ? screen.tab(route) : screen.tab ?? route.name);
   if (scrollToTop) window.scrollTo(0, 0);
 }
 

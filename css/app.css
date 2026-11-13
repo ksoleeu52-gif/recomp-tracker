@@ -592,6 +592,82 @@ h1, h2, h3, p { margin: 0; }
 .add-tools__quick .icon { color: var(--carbs); }
 
 .meal__copy { background: none; border: 0; color: var(--accent); }
+.add-tools__icon { flex: none; width: 54px; min-height: 54px; padding: 0; }
+.add-tools__icon .icon { width: 24px; height: 24px; }
+.header-actions { display: flex; gap: 8px; }
+
+/* ---------- Barcode scanner ---------- */
+.scanner {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  margin-bottom: 12px;
+  border-radius: var(--radius);
+  background: #000;
+}
+.scanner__video { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Aiming box: wide and short, the shape of a barcode. */
+.scanner__frame {
+  position: absolute;
+  inset: 30% 12%;
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  border-radius: 14px;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.35);
+}
+.scanner[data-state="scanning"] .scanner__frame::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 50%;
+  height: 2px;
+  background: var(--danger);
+  animation: scan-line 1.6s ease-in-out infinite alternate;
+}
+@keyframes scan-line { from { transform: translateY(-28px); } to { transform: translateY(28px); } }
+.scanner[data-state="error"] .scanner__frame { display: none; }
+.scanner[data-state="busy"] .scanner__frame { opacity: 0.25; }
+.scanner__status {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 14px;
+  text-align: center;
+}
+.scanner[data-state="error"] .scanner__status,
+.scanner[data-state="busy"] .scanner__status { top: 50%; bottom: auto; transform: translateY(-50%); font-size: 15px; }
+.scanner__actions {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  gap: 8px;
+}
+.scanner__actions .btn { flex: 1; }
+.scanner[data-state="error"] .scanner__status { top: 38%; }
+.manual__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.manual__row .btn { min-height: 54px; }
+.center { text-align: center; }
+
+/* Info banner (e.g. "Found on Open Food Facts") */
+.banner {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: rgba(91, 140, 255, 0.12);
+  border: 1px solid rgba(91, 140, 255, 0.35);
+  font-size: 14px;
+}
+.banner__warn { color: var(--warn); font-weight: 600; }
+.banner__code { color: var(--text-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 
 /* Search inside a sheet: stick to the top of the sheet, not the page. */
 .search--sheet { top: 0; box-shadow: 0 -12px 0 var(--surface); }

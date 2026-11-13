@@ -11,7 +11,7 @@
  *
  * Keep VERSION in sync with APP_VERSION in js/config.js.
  */
-const VERSION = '0.6.0';
+const VERSION = '0.7.0';
 const CACHE = `recomp-${VERSION}`;
 const IS_LOCAL_DEV = ['localhost', '127.0.0.1'].includes(self.location.hostname);
 
@@ -36,9 +36,13 @@ const APP_SHELL = [
   'js/db/settings.js',
   'js/db/storage.js',
   'js/lib/html.js',
+  'js/lib/barcode.js',
   'js/lib/dates.js',
   'js/lib/format.js',
+  'js/lib/handoff.js',
   'js/lib/nutrition.js',
+  'js/lib/off.js',
+  'js/lib/scanner.js',
   'js/lib/starter-foods.js',
   'js/lib/swipe.js',
   'js/components/fields.js',
@@ -58,8 +62,13 @@ const APP_SHELL = [
   'js/screens/food-editor.js',
   'js/screens/add.js',
   'js/screens/meal-editor.js',
+  'js/screens/scan.js',
   'js/screens/meals.js',
   'js/screens/settings.js',
+  // Barcode decoder for iPhone (~1 MB). Precached so scanning finds your saved foods even offline.
+  'vendor/zxing-wasm/reader/index.js',
+  'vendor/zxing-wasm/share.js',
+  'vendor/zxing-wasm/zxing_reader.wasm',
 ];
 
 self.addEventListener('install', (event) => {

@@ -150,6 +150,12 @@ export async function saveFood(fields, id = null) {
   return food;
 }
 
+/** The active food with this barcode, if you've scanned or saved it before. */
+export async function findFoodByBarcode(code) {
+  const matches = await getAll(STORES.foods, { index: 'barcode', query: code });
+  return matches.find((food) => !food.archived) ?? null;
+}
+
 /** Stars / un-stars a food. Favourites get their own section when adding food. */
 export const setFavourite = (id, isFavourite) => patch(STORES.foods, id, { isFavourite, updatedAt: Date.now() });
 

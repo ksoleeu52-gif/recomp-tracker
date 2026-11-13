@@ -9,7 +9,8 @@
  *   5. Saved meals for other slots (collapsed)
  * Every food row shows the portion its + will log (your last-used amount), so
  * "+ Breakfast" then "+" = 2 taps. Tapping a name opens a sheet for a different
- * portion (foods) or a preview (meals). "Quick add" logs raw calories.
+ * portion (foods) or a preview (meals). "Quick add" logs raw calories, and the
+ * barcode button scans a packet (returning here with the amount sheet open).
  * You stay on this screen to add several things; Done goes back.
  */
 import { html, render } from '../lib/html.js';
@@ -27,6 +28,7 @@ import { openQuickAddSheet } from '../components/quick-add-sheet.js';
 import { openSheet } from '../components/sheet.js';
 import { icons } from '../components/icons.js';
 import { toast } from '../components/toast.js';
+import { take } from '../lib/handoff.js';
 
 const RECENT_LIMIT = 10;
 
@@ -52,7 +54,8 @@ export default {
           ${icons.search}
           <input type="search" id="pick-search" placeholder="Search" autocomplete="off" enterkeyhint="search" aria-label="Search foods and meals">
         </label>
-        <button class="btn add-tools__quick" type="button" data-action="quick-add">${icons.bolt} Quick add</button>
+        <a class="btn add-tools__icon" href="#/scan?meal=${slot}&date=${date}" aria-label="Scan a barcode">${icons.barcode}</a>
+        <button class="btn add-tools__quick" type="button" data-action="quick-add">${icons.bolt} Quick</button>
       </div>
       <div id="pick-lists"></div>
       <div class="action-bar">
@@ -195,6 +198,21 @@ export default {
       });
 
     root.querySelector('[data-action="quick-add"]').addEventListener('click', quickAdd);
+
+    // Back from scanning (or from creating a scanned food): open the amount sheet for it.
+    const pickedFood = foodsById.get(take('pick'));
+    if (pickedFood && !pickedFood.archived) {
+      // Wait a frame so the screen is on the page before the sheet opens over it.
+      requestAnimationFrame(() =>
+        openPortionSheet({
+          title: pickedFood.name,
+          food: pickedFood,
+          ...defaultPortion(pickedFood),
+          confirmLabel: `Add to ${slotLabel}`,
+          onConfirm: ({ amount, unit }) => logOneFood(pickedFood, amount, unit),
+        })
+      );
+    }
 
     lists.addEventListener('click', (event) => {
       const button = event.target.closest('[data-action]');

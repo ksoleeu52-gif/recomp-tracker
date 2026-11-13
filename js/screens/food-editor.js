@@ -1,5 +1,6 @@
 /**
  * Create / edit a food.  Routes: #/food/new   #/food/<id>
+ *                               #/food/new?barcode=…[&then=log]  (from the Scan screen)
  *
  * The form switches between "per 100g" and "per serving" without re-rendering
  * (so the keyboard and typed values are kept), and has a live "Check the maths"
@@ -14,6 +15,8 @@ import { portionLabel, unitLabel, macroLine } from '../components/food-row.js';
 import { backHeader } from '../components/header.js';
 import { toast } from '../components/toast.js';
 import { goBack, navigate } from '../router.js';
+import { normaliseBarcode } from '../lib/barcode.js';
+import { handOff, take } from '../lib/handoff.js';
 
 /** Text that changes with the selected basis. */
 const BASIS_TEXT = {
@@ -44,12 +47,17 @@ export default {
       return;
     }
 
-    const food = existing ?? { basis: 'per100g', name: query.name ?? '' };
+    // Arriving from the Scan screen: pre-fill from Open Food Facts (if it was found).
+    const barcode = existing ? existing.barcode : normaliseBarcode(query.barcode) || null;
+    const scanned = !existing && barcode ? take(`barcode:${barcode}`) : undefined;
+
+    const food = existing ?? (scanned?.found ? scanned.food : { basis: 'per100g', name: query.name ?? '' });
     const valueOf = (key) => food[key] ?? '';
     const isPer100g = food.basis !== 'perServing';
 
     render(root, html`
       ${subHeader(existing ? 'Edit food' : 'New food')}
+      ${!existing && barcode && scanBanner(barcode, scanned)}
       <form id="food-form" novalidate>
         <section class="card">
           ${field({ name: 'name', label: 'Name', value: valueOf('name'), inputmode: 'text', placeholder: 'e.g. Porridge oats' })}
@@ -158,8 +166,12 @@ export default {
       const { valid, errors, food: fields } = validateFood(readInput());
       showFieldErrors(form, errors);
       if (!valid) return;
-      const saved = await saveFood({ ...fields, isFavourite: form.isFavourite.checked }, existing?.id);
+      const extra = { isFavourite: form.isFavourite.checked };
+      if (!existing && barcode) Object.assign(extra, { barcode, source: 'barcode' });
+      const saved = await saveFood({ ...fields, ...extra }, existing?.id);
       toast(`Saved ${saved.name}`);
+      // Scanned from the Add screen: go back there and open the amount sheet for this food.
+      if (query.then === 'log') handOff('pick', saved.id);
       goBack('foods');
     });
 
@@ -179,3 +191,24 @@ export default {
 };
 
 const subHeader = (title) => backHeader(title, 'foods');
+
+/**
+ * Explains where the pre-filled values came from.
+ * scanned: { found: true, missing } | { found: false } | undefined (lookup didn't happen, e.g. offline)
+ */
+function scanBanner(barcode, scanned) {
+  if (scanned?.found) {
+    return html`
+      <div class="banner">
+        <p><b>Found on Open Food Facts.</b> Check these values against the packet before saving. Community data can be wrong.</p>
+        ${scanned.missing.length > 0 && html`<p class="banner__warn">Missing: ${scanned.missing.join(', ')}. Fill ${scanned.missing.length === 1 ? 'it' : 'them'} in from the label.</p>`}
+        <p class="banner__code">Barcode ${barcode}</p>
+      </div>`;
+  }
+  const reason = scanned ? 'This product isn’t in Open Food Facts yet.' : 'This product couldn’t be looked up.';
+  return html`
+    <div class="banner">
+      <p><b>${reason}</b> Enter the values from the label. Next time you scan it, it’ll come straight from your foods.</p>
+      <p class="banner__code">Barcode ${barcode}</p>
+    </div>`;
+}
